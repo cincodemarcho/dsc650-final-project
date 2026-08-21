@@ -36,4 +36,12 @@ model = kmeans.fit(scaled_data)
 predictions = model.transform(scaled_data)
 predictions.select("bytes_in", "bytes_out", "prediction").show(20)
 
+#6. write to HDFS 
+output_df = predictions.select("bytes_in", "bytes_out", "prediction")
+
+output_df.write \
+    .mode("overwrite") \
+    .option("header", "true") \
+    .csv("hdfs:///tmp/cloudwatch_kmeans_output")
+
 spark.stop()
