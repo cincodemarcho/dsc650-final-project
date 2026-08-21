@@ -9,7 +9,8 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 #1. fetch data from Hive table
-df = spark.sql("SELECT bytes_in, bytes_out FROM cloudwatch_web_attacks")
+df = spark.sql("SELECT bytes_in, bytes_out FROM cloudwatch_web_attacks") \
+          .dropna(subset=["bytes_in", "bytes_out"])
 
 #2. assemble features into a vector column
 assembler = VectorAssembler(
