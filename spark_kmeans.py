@@ -69,4 +69,36 @@ output_df.write \
     .option("header", "true") \
     .csv("hdfs:///tmp/cloudwatch_kmeans_output")
 
+
+import happybase
+from datetime import datetime
+
+#6. write metrics and predictions to HBase
+connection = happybase.Connection('master', port = 9090)   
+table = connection.table('cloudwatch_web_attacks')
+
+#write a summary row with evaluation metrics
+b = table.batch()
+b.put(b'metrics_summary', {
+    b'records:silhouette_score': str(silhouette).encode(),
+    b'records:wsse': str(wsse).encode(),
+    b'records:k': b'3',
+    b'records:timestamp': str(datetime.now()).encode()
+})
+b.send()
+
+#write per-record predictions
+rows = predictions.select("src_ip", "creation_time", "bytes_in", "bytes_out", "prediction").collect()
+b = table.batch()
+for row in rows:
+    row_key = f"{row['src_ip']}_{row['creation_time']}".encode()
+    b.put(row_key, {
+        b'records:bytes_in': str(row['bytes_in']).encode(),
+        b'records:bytes_out': str(row['bytes_out']).encode(),
+        b'records:cluster': str(row['prediction']).encode()
+    })
+b.send()
+
+connection.close()
+
 spark.stop()
