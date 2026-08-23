@@ -58,10 +58,8 @@ spark-submit \
 
 Logs confirm it ran on Spark 3.0.0 against a YARN cluster, distributing tasks across worker1 and worker2 executors. The console output includes the MODEL TRAINING OUTPUT section (cluster centers, sample predictions) and the EVALUATION METRICS section (silhouette score, WSSE), followed by a final confirmation line, Wrote predictions and metrics to HBase table cloudwatch_web_attacks, printed after the happybase write step completed without error.
 
-![Spark Submit Output](screenshots/spark-submit-output.png)
-
 ## HBase Output
 
 List the model-performance metrics written by Spark into HBase and explain how the application connects the machine learning stage to the final persistence layer.
 
-**PySpark source files:** [`processing.py`](processing.py) and/or [`analysis.py`](analysis.py)
+**PySpark source files:** [`analysis.py`](analysis.py)
