@@ -52,7 +52,9 @@ Data moved cleanly through every stage of the pipeline: 282 records were ingeste
 
 ## Lessons Learned
 
-Describe the most important technical lessons gained from integrating multiple distributed services in one environment.
+I thought I could iterate my way through this process, including taking breaks that involved disconnecting everything. On Day 2, I thought I lost everything (assuming it persisted) and had to re-execute the workflow to where I had previously left off. This helped me understand the implementation a lot more. During this rework, I had made a change to how I created the HBase table. I previously used 'records' as the column family name, but then used 'cf' on day 2. This led to subsequent problems when I was copy/pasting all my commands from the previous day. A lot of trial and error resulted.
+
+I had already understood that each tool were different in what they do, however interacting (and re-interacting) with them helped me understand where I was when navigating commands in the Terminal. I associated the name and function to memory, but I feel more comfortable talking about each system individually after this work.
 
 ## Production Considerations
 
