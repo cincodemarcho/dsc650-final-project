@@ -1,14 +1,22 @@
--- DSC 650 Portfolio Starter
--- Replace this file with the Hive DDL from your final project.
---
--- Before publishing:
---   1. Remove credentials or environment-specific secrets.
---   2. Add short comments explaining important tables.
---   3. Keep the SQL that best demonstrates your work.
-
--- Example structure only:
--- CREATE EXTERNAL TABLE your_table (
---     id STRING,
---     ...
--- )
--- STORED AS ...;
+CREATE TABLE IF NOT EXISTS cloudwatch_web_attacks (
+    bytes_in BIGINT,
+    bytes_out BIGINT,
+    creation_time STRING,
+    end_time STRING,
+    src_ip STRING,
+    src_ip_country_code STRING,
+    protocol STRING,
+    response_code INT,
+    dst_port INT,
+    dst_ip STRING,
+    rule_names STRING,
+    observation_name STRING,
+    source_meta STRING,
+    source_name STRING,
+    `time` STRING,
+    detection_types STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+TBLPROPERTIES ("skip.header.line.count"="1");
