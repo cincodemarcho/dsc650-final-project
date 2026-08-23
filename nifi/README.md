@@ -23,9 +23,9 @@ Once written, that file (CloudWatch_Traffic_Web_Attack.csv) is durable in HDFS a
 
 ## HDFS Destination
 
-**HDFS path:** `[Enter final HDFS path]`
+**HDFS path:** `/tmp/CloudWatch_Traffic_Web_Attack.csv,`
 
-Explain where NiFi writes the dataset and how the destination is used by the next stage of the pipeline.
+Hive is the next stage, and it consumes that exact path directly through a LOAD DATA INPATH statement. Hive relocates the file out of /tmp and into its own managed warehouse directory.
 
 ## Execution Evidence
 
