@@ -23,7 +23,7 @@ Once written, that file (CloudWatch_Traffic_Web_Attack.csv) is durable in HDFS a
 
 ## HDFS Destination
 
-**HDFS path:** `/tmp/CloudWatch_Traffic_Web_Attack.csv,`
+**HDFS path:** `/tmp/CloudWatch_Traffic_Web_Attack.csv`
 
 Hive is the next stage, and it consumes that exact path directly through a LOAD DATA INPATH statement. Hive relocates the file out of /tmp and into its own managed warehouse directory.
 
