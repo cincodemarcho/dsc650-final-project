@@ -33,7 +33,7 @@ Beyond the core Hadoop/Spark ecosystem components, the pipeline depends on a sma
 
 ## What Worked
 
-Summarize the major portions of the pipeline that executed successfully.
+By the end of this project, all six required components were integrated and functioning together as a single pipeline. NiFi successfully retrieved the CloudWatch traffic dataset from its source URL and wrote it to HDFS. Hive successfully loaded that data into a managed table (cloudwatch_web_attacks) and correctly served queries against it. HBase was created and successfully received data written directly from the Spark job. Spark itself trained a K-Means clustering model against the Hive-sourced data, executing distributed tasks across the cluster's worker nodes under YARN's coordination, and evaluated the resulting model with a silhouette score and WSSE. Finally, the Spark driver connected to HBase over Thrift via happybase and wrote both per-record predictions and a summary of the model's evaluation metrics back into HBase.
 
 ## Issues & Challenges Encountered
 
@@ -48,7 +48,7 @@ For each important challenge, explain:
 
 ## Results
 
-Summarize the final technical results, including the successful movement of data through the pipeline and the machine learning results produced by Spark MLlib.
+Data moved cleanly through every stage of the pipeline: 282 records were ingested by NiFi, loaded into Hive, confirmed via an aggregation query (SELECT protocol, COUNT(*), AVG(bytes_in)... returning 282 HTTPS records), processed by Spark, and ultimately written into HBase as 282 per-record rows plus one summary row (283 total, matching the HBase scan count). This consistency across independently-verified counts at each stage is itself a meaningful result. It demonstrates the pipeline didn't silently drop or duplicate records anywhere along the way. On the machine learning side, the K-Means model (k = 3) produced a silhouette score of 0.9863 and a WSSE of 14.60, indicating three well-separated, cohesive clusters based on inbound and outbound byte volume. This suggests the traffic in this dataset naturally groups into distinct volume-based behavioral profiles, even without labeled attack categories to validate against.
 
 ## Lessons Learned
 
@@ -56,15 +56,9 @@ Describe the most important technical lessons gained from integrating multiple d
 
 ## Production Considerations
 
-Explain what you would change if this architecture were being deployed as a production system.
+Several things surfaced during this project that would need to be addressed before this architecture could be trusted in production:
 
-Possible areas to consider include:
-
-- security and authentication;
-- high availability;
-- observability and monitoring;
-- resource sizing;
-- automation and CI/CD;
-- data governance;
-- secrets management;
-- scalability and fault tolerance.
+- Persistent storage for stateful services. Over the course of this project, HBase tables and even HDFS files disappeared between sessions, strongly suggesting the Docker containers weren't backed by persistent volumes. In production, HDFS data directories, HBase's root directory, and the Hive metastore's backing database would all need to be on persistent, backed-up storage.
+- A single, consistently-configured Hive metastore. This project hit a real issue where a hive> CLI session and Spark's Hive integration weren't reliably seeing the same metastore, causing tables created in one session to be invisible in another. In production, this would be addressed with a properly configured, always-running remote metastore service that every client is explicitly pointed at, rather than allowing any client to silently fall back to a local embedded metastore.
+- Authentication and access control. Commands throughout this project ran as root with no Kerberos, no HBase ACLs, and no NiFi authentication configured. A production deployment handling real network security data would need proper authentication across every component, given the sensitivity of the data itself.
+- Orchestration and monitoring instead of manual execution. Every stage in this project was triggered by hand — starting NiFi processors manually, running spark-submit from a terminal, checking jps to confirm services were up. A production pipeline would use a scheduler/orchestrator to run this on a recurring basis, with alerting on failures rather than requiring someone to notice a missing table by trial and error.
