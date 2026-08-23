@@ -37,14 +37,17 @@ By the end of this project, all six required components were integrated and func
 
 ## Issues & Challenges Encountered
 
-Describe the most meaningful technical problems encountered while building the project.
+HBase table disappearing between sessions:
+- What happened: A scan 'cloudwatch_web_attacks' that had worked earlier later failed with ERROR: Unknown table cloudwatch_web_attacks!The table itself was gone, not just empty.
+- How I investigated it: Since this happened independently of anything in the Spark code, I checked docker-compose ps for evidence the HBase container had restarted.
+- What I changed or fixed: Simply recreated the table with the original create command. 
+- What I learned: Things erase after you exit/disconnect without a persistent solution.
 
-For each important challenge, explain:
-
-1. what happened;
-2. how you investigated it;
-3. what you changed or fixed;
-4. what you learned from the issue.
+Issue 3: The source CSV itself vanished from HDFS:
+- What happened: hdfs dfs -ls -R /usr/hive/warehouse/ showed the cloudwatch_web_attacks directory existing but empty — no CSV file inside it, despite one having been confirmed there the day before. A follow-up check of /tmp/ showed the same thing: the file was gone from there too.
+- How I investigated it: RI checked every plausible location the file could be — the Hive warehouse directory, /tmp, and a full recursive filesystem search. It was gone.
+- What I changed or fixed: Re-ran the original NiFi flow (InvokeHTTP → UpdateAttribute → PutHDFS) to re-download and re-ingest the CSV from its source URL, restoring it to /tmp.
+- What I learned: The underlying HDFS storage was also not surviving between sessions. It also reinforced a separate, more mechanical lesson: LOAD DATA INPATH moves files rather than copying them, so even in a stable environment, re-running a load step against the same path a second time would fail simply because the file is no longer there after the first successful load.
 
 ## Results
 
