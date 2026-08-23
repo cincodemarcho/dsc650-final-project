@@ -44,7 +44,7 @@ HBase table disappearing between sessions:
 - What I changed or fixed: Simply recreated the table with the original create command. 
 - What I learned: Things erase after you exit/disconnect without a persistent solution.
 
-Issue 3: The source CSV itself vanished from HDFS:
+The source CSV itself vanished from HDFS:
 - What happened: hdfs dfs -ls -R /usr/hive/warehouse/ showed the cloudwatch_web_attacks directory existing but empty — no CSV file inside it, despite one having been confirmed there the day before. A follow-up check of /tmp/ showed the same thing: the file was gone from there too.
 - How I investigated it: RI checked every plausible location the file could be — the Hive warehouse directory, /tmp, and a full recursive filesystem search. It was gone.
 - What I changed or fixed: Re-ran the original NiFi flow (InvokeHTTP → UpdateAttribute → PutHDFS) to re-download and re-ingest the CSV from its source URL, restoring it to /tmp.
