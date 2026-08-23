@@ -6,40 +6,37 @@ Apache Spark MLlib provides the distributed processing and machine learning laye
 
 ## Hive Input
 
-**Hive table:** `[Enter Hive table name]`
+**Hive table:** `cloudwatch_web_attacks`
 
-Explain what data Spark reads from Hive and which fields are used by the machine learning workflow.
+Spark reads from the cloudwatch_web_attacks Hive table via spark.sql("SELECT bytes_in, bytes_out, src_ip, creation_time FROM cloudwatch_web_attacks"). It pulls four of the table's 16 columns rather than the full schema.
 
 ## Data Preparation & Transformations
 
 Describe the important preprocessing or transformation steps performed before model training.
 
-Examples may include:
-
-- selecting relevant features;
-- handling missing values;
-- encoding categorical fields;
-- assembling feature vectors;
-- scaling or normalization;
-- creating training and test datasets.
+1. Column selection focused on bytes_in, bytes_out, src_ip, and creation_time
+2. Null handling removes any records missing either byte-count value, since KMeans can't operate with nulls
+3. Feature vectorization with VectorAssembler combining bytes_in and bytes_out into a single vector column (raw_features)
+4. Standardization with StandardScaler transforms raw_features into features by centering each value to zero mean and scaling to unit variance
 
 ## MLlib Algorithm
 
-**Algorithm:** `[Enter algorithm]`
+**Algorithm:** `K-Means clustering`
 
-Explain:
-
-- why this algorithm was appropriate for the selected dataset;
-- what prediction or modeling task it performs;
-- which features and target/label are used.
+I chose K-Means clustering (k = 3) rather than a supervised classifier because this dataset has no labeled ground truth distinguishing malicious from benign traffic. Every record represents traffic that was already flagged as a suspicious web interaction, so there's no negative class to train a classifier against. Clustering instead groups records by similarity in bytes_in and bytes_out (scaled via StandardScaler) to surface natural structure in the traffic volume patterns, which can help identify distinct behavioral profiles (e.g., low-volume probing versus high-volume data exfiltration attempts) without requiring labels. The model achieved a silhouette score of 0.9863, indicating very well-separated, cohesive clusters, with a within-cluster sum of squared errors (WSSE) of 14.60. The high silhouette score suggests the three clusters correspond to genuinely distinct traffic volume regimes in this dataset rather than an arbitrary split, though with only two features driving the clustering, the practical security interpretation of each cluster would benefit from incorporating additional fields (e.g., protocol, response_code) in future iterations.
 
 ## Training & Evaluation
 
-Summarize the training process and explain the evaluation metric or metrics used.
+After selecting the two numeric fields, the pipeline drops nulls, assembles bytes_in/bytes_out into a feature vector via VectorAssembler, and standardizes that vector with StandardScaler (zero mean, unit variance) so neither field dominates the distance calculation. KMeans(k = 3, seed = 42).fit() then trains on the scaled features, and model.transform() assigns every record to one of the three clusters.
 
-**Primary evaluation metric(s):** `[Enter metric(s)]`
+Two evaluation metrics are computed afterward:
 
-Explain what the resulting values indicate about model performance.
+- Silhouette score, via ClusteringEvaluator, measuring how well-separated and cohesive the resulting clusters are (range -1 to +1)
+- WSSE (within-set sum of squared errors), pulled from model.summary.trainingCost that calculatese the total squared distance from each point to its assigned cluster center, which is the quantity KMeans directly minimizes during training
+
+**Primary evaluation metric(s):** `Silhouette score and WSSE`
+
+The silhouette score came out to 0.9863, indicating the three clusters are extremely well-separated with almost no ambiguously-placed points near a cluster boundary. WSSE was 14.60, combined with the high silhouette score, it supports the conclusion that k = 3 captures genuine, distinct structure in traffic volume (bytes in vs. out) rather than an arbitrary or forced partition.
 
 ### Training Output
 
@@ -51,13 +48,15 @@ Explain what the resulting values indicate about model performance.
 
 ## Spark Submit / YARN Execution
 
-Document the exact `spark-submit` command used to submit the PySpark application through YARN.
-
 ```bash
-# Paste your spark-submit command here
+spark-submit \
+  --master yarn \
+  --deploy-mode client \
+  --name CloudWatch_KMeans_to_HBase \
+  spark_kmeans.py
 ```
 
-Briefly describe the successful execution and any important log or output information.
+Logs confirm it ran on Spark 3.0.0 against a YARN cluster, distributing tasks across worker1 and worker2 executors. The console output includes the MODEL TRAINING OUTPUT section (cluster centers, sample predictions) and the EVALUATION METRICS section (silhouette score, WSSE), followed by a final confirmation line, Wrote predictions and metrics to HBase table cloudwatch_web_attacks, printed after the happybase write step completed without error.
 
 ![Spark Submit Output](screenshots/spark-submit-output.png)
 
