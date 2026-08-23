@@ -13,15 +13,13 @@ This dataset contains web traffic records collected through AWS CloudWatch, aime
 
 ## Flow Design
 
-Describe the important processors used in the final NiFi flow and the role each processor performs.
+This flow uses three processors to move the CloudWatch Traffic Web Attack dataset from its source into HDFS: 
+- InvokeHTTP ("Download File") issues an HTTP GET request to retrieve the raw CSV from its hosted location and emits it as a FlowFile.
+- UpdateAttribute ("Update File Name") then rewrites the FlowFile's filename attribute so the file lands in HDFS with a clean, predictable name rather than whatever the source URL provides.
+- Finally, PutHDFS ("Write File to HDFS") writes the FlowFile's content to the configured HDFS directory (/tmp), completing the ingestion step.
+Failure relationships on both InvokeHTTP and PutHDFS are routed to a funnel so that any failed HTTP requests or HDFS write errors are captured rather than silently dropped.
 
-| Processor / Process Group | Role in the Flow |
-|---|---|
-| [Processor name] | [What it does] |
-| [Processor name] | [What it does] |
-| [Processor name] | [What it does] |
-
-Explain how data moves from the source URL through NiFi and into HDFS.
+Once written, that file (CloudWatch_Traffic_Web_Attack.csv) is durable in HDFS and visible to hdfs dfs -ls /tmp/.
 
 ## HDFS Destination
 
