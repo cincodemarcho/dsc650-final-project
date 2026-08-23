@@ -62,6 +62,8 @@ Logs confirm it ran on Spark 3.0.0 against a YARN cluster, distributing tasks ac
 
 ## HBase Output
 
-List the model-performance metrics written by Spark into HBase and explain how the application connects the machine learning stage to the final persistence layer.
+Written into the metrics_summary row: cf:silhouette_score (0.9864), cf:wsse (14.60), cf:k (3), and cf:timestamp. Per-record rows (keyed src_ip_creation_time) additionally store cf:bytes_in, cf:bytes_out, and cf:cluster for each of the 282 individual records.
+
+The connection between the ML stage and HBase is handled entirely within the same PySpark script, using the happybase client library. After training and evaluation complete, the script opens a Thrift connection to the HBase Thrift server, then uses table.batch().put() calls to write both the aggregate metrics and the per-record cluster assignments directly from the Spark driver into the cloudwatch_web_attacks HBase table. This is what closes the loop: the same silhouette and wsse Python variables computed during evaluation are the exact values persisted to HBase, and the same predictions DataFrame produced by model.transform() is what's iterated over to populate the per-record rows — so the populated scan result is a direct, unmodified reflection of the Spark ML job's output.
 
 **PySpark source files:** [`analysis.py`](analysis.py)
